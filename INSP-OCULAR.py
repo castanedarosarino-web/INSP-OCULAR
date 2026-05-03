@@ -9,7 +9,7 @@ st.set_page_config(page_title="SVI - Bloque 6 Inspección Ocular", layout="wide"
 # =========================
 st.title("🗺️ BLOQUE 6 - INSPECCIÓN OCULAR")
 st.caption("Sistema de Validación de Identidad (S.I.V.)")
-st.sidebar.markdown("### Autoría:\n**Sub Comisario CASTAÑEDA Juan**\n*26 años de servicio*")
+st.sidebar.markdown("### Autoría:\n**Sub Comisario CASTAÑEDA Juan**\")
 
 # =========================
 # ESTADO DE SESIÓN
