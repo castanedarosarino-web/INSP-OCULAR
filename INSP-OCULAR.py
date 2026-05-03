@@ -2,14 +2,15 @@ import streamlit as st
 import json
 from datetime import datetime, date
 
+# Configuración de página
 st.set_page_config(page_title="SVI - Bloque 6 Inspección Ocular", layout="wide")
 
 # =========================
-# CABECERA Y FIRMA DE AUTOR
+# CABECERA Y AUTORÍA (CORREGIDO)
 # =========================
 st.title("🗺️ BLOQUE 6 - INSPECCIÓN OCULAR")
-st.caption("Sistema de Validación de Identidad (S.I.V.)")
-st.sidebar.markdown("### Autoría:\n**Sub Comisario CASTAÑEDA Juan**\")
+st.markdown("### Sistema de Validación de Identidad (S.I.V.)")
+st.sidebar.markdown("### Autoría:\n**Sub Comisario CASTAÑEDA Juan**")
 
 # =========================
 # ESTADO DE SESIÓN
