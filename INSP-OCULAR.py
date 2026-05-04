@@ -6,29 +6,18 @@ from fpdf import FPDF
 from io import BytesIO
 from PIL import Image
 
-# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="S.I.V. Bloque 6 - Inspección y Cámaras", layout="wide")
 
-# --- ESTILOS CSS ---
 st.markdown("""
     <style>
-    .acta-previa {
-        background-color: white;
-        color: black;
-        padding: 40px;
-        border: 1px solid #000;
-        font-family: 'Arial', sans-serif;
-        line-height: 1.5;
-    }
+    .acta-previa { background-color: white; color: black; padding: 40px; border: 1px solid #000; font-family: 'Arial', sans-serif; line-height: 1.5; }
     .titulo-pdf { text-align: center; font-weight: bold; text-decoration: underline; font-size: 18px; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LATERAL ---
 st.sidebar.title("S.I.V. Bloque 6")
 st.sidebar.write("**Autoría:** Sub Comisario CASTAÑEDA Juan")
 
-# --- FORMULARIO ---
 st.header("👤 Identificación del Oficial Actante")
 c1, c2, c3 = st.columns(3)
 with c1: grade = st.selectbox("Grado:", ["Sub Comisario", "Principal", "Inspector", "Sub Inspector", "Oficial"])
@@ -47,6 +36,9 @@ with col2:
 st.header("🔍 Resultado de Inspección Técnica")
 resultado_ia = st.text_area("Pegue aquí el informe descriptivo de la IA:", height=150)
 
+st.header("🛡️ Preservación y Perímetro")
+perimetro = st.radio("¿Se procedió al encintado perimetral?", ["SÍ", "NO"], horizontal=True)
+
 st.header("📹 Relevamiento de Cámaras")
 hay_camaras = st.checkbox("¿Se detectaron cámaras de seguridad?")
 
@@ -62,23 +54,18 @@ if hay_camaras:
     with cx2:
         datos_civil['celular'] = st.text_input("Celular:")
         datos_civil['email'] = st.text_input("E-mail:")
-        datos_civil['estado'] = st.selectbox("Situación:", [
+        datos_civil['estado'] = st.selectbox("Situación del Registro:", [
             "ENTREGA VOLUNTARIA: Soporte preservado para PDI.",
             "NEGATIVA / ORDEN JUDICIAL: Requiere orden de secuestro.",
             "MANIFESTACIÓN TÉCNICA: No graba o está dañado.",
             "SOLICITUD DE PERITOS: Desconoce manejo técnico.",
             "RE-FILMACIÓN DE URGENCIA: Captación digital por riesgo de pérdida."
         ])
-
     st.warning("🖋️ FIRMA DEL RESPONSABLE (Táctil)")
-    canvas_result = st_canvas(
-        fill_color="rgba(255, 255, 255, 0)", stroke_width=3, stroke_color="#000",
-        background_color="#fff", height=150, width=400, key="canvas_firma"
-    )
+    canvas_result = st_canvas(fill_color="rgba(255, 255, 255, 0)", stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, key="canvas_firma")
     if canvas_result.image_data is not None:
         firma_b64 = canvas_result.image_data
 
-# --- FUNCIÓN PDF CORREGIDA ---
 def generar_pdf_bytes():
     pdf = FPDF()
     pdf.add_page()
@@ -87,29 +74,35 @@ def generar_pdf_bytes():
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "ACTA DE INSPECCION OCULAR", ln=True, align="C")
     pdf.ln(5)
-    
     pdf.set_font("Arial", "B", 10)
     pdf.cell(0, 8, f"CAUSA: {causa} | FECHA: {fecha.strftime('%d/%m/%Y')}", ln=True)
     pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 6, f"LUGAR: {lugar}\nHECHO: {hecho}\nACTANTE: {grade} {name_actante} (Legajo: {legajo})")
     pdf.ln(5)
     
+    # 1. INSPECCIÓN
     pdf.set_font("Arial", "B", 10)
     pdf.cell(0, 8, "1. INFORME TECNICO DE INSPECCION:", ln=True)
     pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 6, resultado_ia)
     
+    # 2. PERÍMETRO
+    pdf.ln(3)
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, "2. PRESERVACION DEL LUGAR DEL HECHO:", ln=True)
+    pdf.set_font("Arial", "", 10)
+    txt_peri = "Se procedió a la correcta delimitación del área mediante encintado perimetral." if perimetro == "SÍ" else "No se realizó encintado perimetral por razones de urgencia operativa."
+    pdf.multi_cell(0, 6, txt_peri)
+
+    # 3. CÁMARAS
     if hay_camaras:
-        pdf.ln(5)
+        pdf.ln(3)
         pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 8, "2. RELEVAMIENTO DE CAMARAS Y COMPROMISO DE RESGUARDO:", ln=True)
+        pdf.cell(0, 8, "3. RELEVAMIENTO DE CAMARAS Y COMPROMISO DE RESGUARDO:", ln=True)
         pdf.set_font("Arial", "", 10)
-        texto = (f"Responsable: {datos_civil['nombre']}, DNI: {datos_civil['dni']}, Vinculo: {datos_civil['vinculo']}. "
-                 f"Contacto: {datos_civil['celular']}. Situacion: {datos_civil['estado']}.")
+        texto = f"Responsable: {datos_civil['nombre']}, DNI: {datos_civil['dni']}, Contacto: {datos_civil['celular']}. Situacion: {datos_civil['estado']}."
         pdf.multi_cell(0, 6, texto)
-        
         if firma_b64 is not None:
-            # Convertir canvas a imagen para el PDF
             img_firma = Image.fromarray(firma_b64.astype('uint8'), 'RGBA')
             img_buffer = BytesIO()
             img_firma.save(img_buffer, format="PNG")
@@ -120,49 +113,20 @@ def generar_pdf_bytes():
     pdf.ln(20)
     pdf.cell(0, 10, "__________________________", ln=True, align="R")
     pdf.cell(0, 5, f"Firma {grade} {name_actante}", ln=True, align="R")
-    
-    # IMPORTANTE: Devolver como bytes para evitar el error 'bytearray'
     return bytes(pdf.output())
 
-# --- FINALIZACIÓN ---
 st.divider()
 if st.button("🏁 VALIDAR Y GENERAR"):
     if not resultado_ia:
         st.error("Falta el informe de inspección.")
     else:
-        # Mostrar Vista Previa
-        st.markdown(f"""
-        <div class="acta-previa">
-            <div class="titulo-pdf">ACTA DE INSPECCIÓN OCULAR</div>
-            <p><b>CAUSA:</b> {causa} | <b>ACTANTE:</b> {grade} {name_actante}</p>
-            <p>{resultado_ia}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown(f'<div class="acta-previa"><div class="titulo-pdf">ACTA DE INSPECCIÓN OCULAR</div><p><b>CAUSA:</b> {causa} | <b>ACTANTE:</b> {grade} {name_actante}</p><p>{resultado_ia}</p></div>', unsafe_allow_html=True)
         st.subheader("⬇️ DESCARGAS OFICIALES")
         c_pdf, c_json = st.columns(2)
-        
-        # Generar archivos
         try:
             pdf_data = generar_pdf_bytes()
-            
-            c_pdf.download_button(
-                label="📄 Descargar Acta PDF",
-                data=pdf_data,
-                file_name=f"Acta_{causa}.pdf",
-                mime="application/pdf"
-            )
-            
-            json_data = json.dumps({
-                "oficial": name_actante, "legajo": legajo, "causa": causa, 
-                "inspeccion": resultado_ia, "camaras": datos_civil if hay_camaras else "N/A"
-            }, indent=4)
-            
-            c_json.download_button(
-                label="💾 Descargar JSON",
-                data=json_data,
-                file_name=f"Data_{causa}.json",
-                mime="application/json"
-            )
+            c_pdf.download_button(label="📄 Descargar Acta PDF", data=pdf_data, file_name=f"Acta_{causa}.pdf", mime="application/pdf")
+            json_data = json.dumps({"oficial": name_actante, "causa": causa, "perimetro": perimetro, "inspeccion": resultado_ia, "camaras": datos_civil if hay_camaras else "N/A"}, indent=4)
+            c_json.download_button(label="💾 Descargar JSON", data=json_data, file_name=f"Data_{causa}.json", mime="application/json")
         except Exception as e:
-            st.error(f"Error al generar archivos: {e}")
+            st.error(f"Error: {e}")
