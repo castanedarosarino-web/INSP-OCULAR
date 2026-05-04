@@ -6,173 +6,155 @@ from fpdf import FPDF
 from io import BytesIO
 from PIL import Image
 
-# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="S.I.V. Bloque 6 - INSPECCIÓN OCULAR", layout="wide")
 
-# --- ESTILOS CSS JUDICIALES ---
+# ESTILOS
 st.markdown("""
     <style>
-    .acta-previa { 
-        background-color: white; 
-        color: black; 
-        padding: 45px; 
-        border: 2px solid #000; 
-        font-family: 'Times New Roman', serif; 
-        line-height: 1.5;
-        box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
-    }
-    .titulo-pdf { text-align: center; font-weight: bold; text-decoration: underline; font-size: 20px; margin-bottom: 25px; text-transform: uppercase; }
-    .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); opacity: 0.1; font-size: 80px; pointer-events: none; }
+    .acta-previa { background-color: white; color: black; padding: 45px; border: 1px solid #000; font-family: 'Arial', sans-serif; }
+    .titulo-pdf { text-align: center; font-weight: bold; text-decoration: underline; font-size: 18px; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- PANEL LATERAL ---
-st.sidebar.title("S.I.V. SISTEMA DE VALIDACIÓN")
-st.sidebar.write("**Módulo:** Inspección Ocular")
+st.sidebar.title("S.I.V. Bloque 6")
 st.sidebar.write("**Autoría:** Sub Comisario CASTAÑEDA Juan")
-st.sidebar.divider()
 
+# --- CAMBIO DE TÍTULO DE BLOQUE ---
 st.title("🛡️ INSPECCIÓN OCULAR")
 
-# --- SECCIÓN 1: PERSONAL ACTUANTE ---
-with st.expander("👤 PERSONAL ACTUANTE", expanded=True):
-    c1, c2, c3 = st.columns(3)
-    with c1: grade = st.selectbox("Grado:", ["Sub Comisario", "Principal", "Inspector", "Sub Inspector", "Oficial"])
-    with c2: name_actuante = st.text_input("Apellido y Nombre:", "CASTAÑEDA Juan")
-    with c3: legajo = st.text_input("Legajo / NI:", "123.456")
+# --- IDENTIFICACIÓN DEL PERSONAL ---
+st.header("👤 Personal Actuante")
+c1, c2, c3 = st.columns(3)
+with c1: grade = st.selectbox("Grado:", ["Sub Comisario", "Principal", "Inspector", "Sub Inspector", "Oficial"])
+with c2: name_actuante = st.text_input("Apellido y Nombre:", "CASTAÑEDA Juan")
+with c3: legajo = st.text_input("Legajo / NI:", "123.456")
 
-# --- SECCIÓN 2: REFERENCIA ADMINISTRATIVA ---
-with st.expander("📝 REFERENCIA DEL PROCEDIMIENTO", expanded=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        acta_nro = st.text_input("REFERENTE ACTA N°:", placeholder="Ej: 123/26")
-        lugar = st.text_input("Lugar del Hecho (Intersección/Domicilio):")
-    with col2:
-        hecho = st.text_input("Carátula Policial:", "ROBO CALIFICADO")
-        fecha = st.date_input("Fecha de la Inspección:")
+# --- REFERENCIA ---
+st.header("📝 Referencia Administrativa")
+col1, col2 = st.columns(2)
+with col1:
+    acta_nro = st.text_input("REFERENTE ACTA N° (Bloque 1):", "123/26")
+    lugar = st.text_input("Lugar del Hecho:", "Mendoza y Martín Rodríguez")
+with col2:
+    hecho = st.text_input("Carátula:", "ROBO CALIFICADO")
+    fecha = st.date_input("Fecha del Procedimiento:")
 
-# --- SECCIÓN 3: CUERPO TÉCNICO ---
-st.header("🔍 Informe de Inspección")
-resultado_ia = st.text_area("Descripción técnica (Cardinal Norte, Sur, Este, Oeste):", height=200, help="Pegue aquí el texto procesado por la IA.")
+st.header("🔍 Informe Técnico (Descripción IA)")
+resultado_ia = st.text_area("Informe descriptivo consolidado:", height=150)
 
-st.header("🛡️ Preservación de la Escena")
-perimetro = st.radio("¿Se procedió al encintado perimetral?", ["SÍ", "NO"], horizontal=True, help="Define la cláusula de seguridad en el acta.")
+st.header("🛡️ Preservación del Lugar")
+perimetro = st.radio("¿Se procedió al encintado perimetral?", ["SÍ", "NO"], horizontal=True)
 
-# --- SECCIÓN 4: VIDEOVIGILANCIA ---
-st.header("📹 Relevamiento de Cámaras")
-c_pub, c_priv = st.columns(2)
-with c_pub: hay_publicas = st.checkbox("Cámaras Públicas (911 / Central de Monitoreo)")
-with c_priv: hay_privadas = st.checkbox("Cámaras Privadas (Particulares / Comercios)")
+# --- BLOQUE CAMARAS ---
+st.header("📹 Relevamiento de Cámaras de Seguridad")
+col_pub, col_priv = st.columns(2)
+with col_pub: hay_publicas = st.checkbox("Cámaras Públicas / Domos (911)")
+with col_priv: hay_privadas = st.checkbox("Cámaras Privadas / Particulares")
 
 id_domos = ""
 datos_civil = {}
 firma_b64 = None
 
 if hay_publicas:
-    id_domos = st.text_input("ID de Domos detectados:", placeholder="Ej: Domo 102, 44, 21")
+    id_domos = st.text_input("Identificación de Domos/Cámaras Públicas (ID):")
 
 if hay_privadas:
-    st.subheader("🖋️ Compromiso de Resguardo (Privado)")
-    cx1, cx2 = st.columns(2)
-    with cx1:
-        datos_civil['nombre'] = st.text_input("Nombre y Apellido del Responsable:")
-        datos_civil['dni'] = st.text_input("DNI:")
-        datos_civil['vinculo'] = st.selectbox("Vínculo:", ["Propietario", "Empleado", "Inquilino", "Encargado"])
-    with cx2:
-        datos_civil['celular'] = st.text_input("Celular:")
-        datos_civil['estado'] = st.selectbox("Situación del Soporte:", [
-            "ENTREGA VOLUNTARIA: Soporte preservado para PDI.",
-            "NEGATIVA / ORDEN JUDICIAL: Se requiere orden de secuestro.",
-            "MANIFESTACIÓN TÉCNICA: El equipo no graba.",
-            "RE-FILMACIÓN DE URGENCIA: Captación digital por riesgo de pérdida."
-        ])
-    
-    st.info("El civil debe firmar en el recuadro blanco para validar el compromiso.")
-    canvas_result = st_canvas(fill_color="rgba(255, 255, 255, 0)", stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=450, key="canvas_firma")
-    if canvas_result.image_data is not None:
-        firma_b64 = canvas_result.image_data
+    with st.expander("Datos del Responsable Privado y Firma", expanded=True):
+        cx1, cx2 = st.columns(2)
+        with cx1:
+            datos_civil['nombre'] = st.text_input("Nombre y Apellido (Civil):")
+            datos_civil['dni'] = st.text_input("DNI:")
+            datos_civil['vinculo'] = st.selectbox("Vínculo:", ["Propietario", "Empleado", "Inquilino", "Otro"])
+        with cx2:
+            datos_civil['celular'] = st.text_input("Celular de contacto:")
+            datos_civil['email'] = st.text_input("E-mail:")
+            datos_civil['estado'] = st.selectbox("Situación del Registro:", [
+                "ENTREGA VOLUNTARIA: Soporte preservado para PDI.",
+                "NEGATIVA / ORDEN JUDICIAL: Requiere orden de secuestro.",
+                "MANIFESTACIÓN TÉCNICA: No graba o está dañado.",
+                "SOLICITUD DE PERITOS: Desconoce manejo técnico.",
+                "RE-FILMACIÓN DE URGENCIA: Captación digital por riesgo de pérdida."
+            ])
+        st.warning("🖋️ FIRMA DEL RESPONSABLE PRIVADO")
+        canvas_result = st_canvas(fill_color="rgba(255, 255, 255, 0)", stroke_width=3, stroke_color="#000", background_color="#fff", height=150, width=400, key="canvas_firma")
+        if canvas_result.image_data is not None:
+            firma_b64 = canvas_result.image_data
 
-# --- MOTOR DE GENERACIÓN PDF (BLINDADO) ---
-def generar_pdf_blindado():
+def generar_pdf_bytes():
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    
-    # Encabezado
     pdf.set_font("Arial", "B", 14)
     pdf.cell(0, 10, "POLICIA DE LA PROVINCIA DE SANTA FE", ln=True, align="C")
+    
+    # --- TÍTULO DEL PDF CORREGIDO ---
     pdf.set_font("Arial", "BU", 12)
     pdf.cell(0, 10, "ACTA DE INSPECCION OCULAR", ln=True, align="C")
     pdf.ln(5)
     
-    # Datos Referenciales
     pdf.set_font("Arial", "B", 10)
-    pdf.cell(0, 7, f"REFERENTE ACTA Nro: {acta_nro} | FECHA: {fecha.strftime('%d/%m/%Y')}", ln=True)
+    pdf.cell(0, 8, f"REFERENTE ACTA Nro: {acta_nro} | FECHA: {fecha.strftime('%d/%m/%Y')}", ln=True)
     pdf.set_font("Arial", "", 10)
-    pdf.multi_cell(0, 6, f"LUGAR: {lugar}\nHECHO: {hecho}\nPERSONAL ACTUANTE: {grade} {name_actuante} (NI: {legajo})")
+    pdf.multi_cell(0, 6, f"LUGAR: {lugar}\nHECHO: {hecho}\nPERSONAL ACTUANTE: {grade} {name_actuante} (Legajo: {legajo})")
     pdf.ln(5)
     
-    # 1. Inspección
+    # 1. INSPECCIÓN
     pdf.set_font("Arial", "B", 10)
     pdf.cell(0, 8, "1. INFORME TECNICO DE INSPECCION OCULAR:", ln=True)
     pdf.set_font("Arial", "", 10)
     pdf.multi_cell(0, 6, resultado_ia)
     
-    # 2. Perímetro
+    # 2. PERÍMETRO
     pdf.ln(3)
     pdf.set_font("Arial", "B", 10)
     pdf.cell(0, 8, "2. PRESERVACION DEL LUGAR DEL HECHO:", ln=True)
     pdf.set_font("Arial", "", 10)
-    txt_peri = ("Se hace constar que el Personal Actuante procedió a la correcta delimitación del área mediante el uso de cinta de peligro y vallado perimetral, garantizando la intangibilidad de la escena." if perimetro == "SÍ" else 
-                "Se deja constancia que no se realizó el encintado perimetral debido a la urgencia operativa, manteniendo la custodia visual ininterrumpida del lugar.")
+    if perimetro == "SÍ":
+        txt_peri = "Se hace constar que el Personal Actuante procedió a la correcta delimitación del área mediante el uso de cinta de peligro y vallado perimetral, garantizando la intangibilidad de la escena y preservando los rastros, huellas e indicios de interés."
+    else:
+        txt_peri = "Se deja constancia que no se realizó el encintado perimetral debido a la urgencia operativa, manteniendo la custodia visual del lugar."
     pdf.multi_cell(0, 6, txt_peri)
 
-    # 3. Cámaras
-    if hay_publicas or hay_privadas:
+    # 3. CÁMARAS PÚBLICAS
+    if hay_publicas:
         pdf.ln(3)
         pdf.set_font("Arial", "B", 10)
-        pdf.cell(0, 8, "3. RELEVAMIENTO DE VIDEOVIGILANCIA:", ln=True)
+        pdf.cell(0, 8, "3. RELEVAMIENTO DE VIDEOVIGILANCIA PUBLICA (911):", ln=True)
         pdf.set_font("Arial", "", 10)
-        if hay_publicas:
-            pdf.multi_cell(0, 6, f"- PUBLICA: Se detectaron dispositivos oficiales ID: {id_domos}.")
-        if hay_privadas:
-            txt_priv = f"- PRIVADA: Responsable {datos_civil['nombre']}, DNI {datos_civil['dni']}. Situación: {datos_civil['estado']}. El mismo asume el compromiso de resguardo de las imágenes."
-            pdf.multi_cell(0, 6, txt_priv)
-            if firma_b64 is not None:
-                img_firma = Image.fromarray(firma_b64.astype('uint8'), 'RGBA')
-                buf = BytesIO()
-                img_firma.save(buf, format="PNG")
-                buf.seek(0)
-                pdf.image(buf, x=20, y=pdf.get_y()+2, w=45)
-                pdf.ln(22)
-                pdf.set_font("Arial", "I", 8)
-                pdf.cell(0, 5, f"Firma Responsable: {datos_civil['nombre']}", ln=True)
+        pdf.multi_cell(0, 6, f"ID de dispositivos detectados: {id_domos}.")
 
-    # Pie de Firma
-    pdf.ln(25)
-    pdf.set_font("Arial", "B", 10)
-    pdf.cell(0, 5, "__________________________", ln=True, align="R")
+    # 4. CÁMARAS PRIVADAS
+    if hay_privadas:
+        pdf.ln(3)
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(0, 8, "4. RELEVAMIENTO DE CAMARAS PRIVADAS:", ln=True)
+        pdf.set_font("Arial", "", 10)
+        texto = f"Responsable: {datos_civil['nombre']}, DNI: {datos_civil['dni']}. Situacion: {datos_civil['estado']}."
+        pdf.multi_cell(0, 6, texto)
+        if firma_b64 is not None:
+            img_firma = Image.fromarray(firma_b64.astype('uint8'), 'RGBA')
+            img_buffer = BytesIO()
+            img_firma.save(img_buffer, format="PNG")
+            img_buffer.seek(0)
+            pdf.image(img_buffer, x=10, y=pdf.get_y()+5, w=50)
+            pdf.ln(25)
+
+    pdf.ln(20)
+    pdf.cell(0, 10, "__________________________", ln=True, align="R")
     pdf.cell(0, 5, f"Firma {grade} {name_actuante}", ln=True, align="R")
-    pdf.cell(0, 5, f"NI: {legajo}", ln=True, align="R")
-    
     return bytes(pdf.output())
 
-# --- CIERRE Y DESCARGAS ---
 st.divider()
-if st.button("🏁 VALIDAR Y FINALIZAR ACTA"):
-    if not resultado_ia or not acta_nro:
-        st.error("Error: Debe completar el N° de Acta y el Informe Técnico.")
+if st.button("🏁 VALIDAR Y GENERAR"):
+    if not resultado_ia:
+        st.error("Falta el informe de inspección.")
     else:
-        st.markdown(f'<div class="acta-previa"><div class="titulo-pdf">ACTA DE INSPECCIÓN OCULAR</div><p><b>ACTA N°:</b> {acta_nro} | <b>FECHA:</b> {fecha}</p><p>{resultado_ia}</p></div>', unsafe_allow_html=True)
-        
-        st.subheader("📦 Exportación de Documentación")
+        st.markdown(f'<div class="acta-previa"><div class="titulo-pdf">ACTA DE INSPECCIÓN OCULAR</div><p><b>ACTA N°:</b> {acta_nro} | <b>PERSONAL ACTUANTE:</b> {grade} {name_actuante}</p><p>{resultado_ia}</p></div>', unsafe_allow_html=True)
+        st.subheader("⬇️ DESCARGAS OFICIALES")
         c_pdf, c_json = st.columns(2)
         try:
-            pdf_out = generar_pdf_blindado()
-            c_pdf.download_button("📄 Descargar ACTA DE INSPECCIÓN OCULAR (PDF)", data=pdf_out, file_name=f"Acta_Inspeccion_{acta_nro.replace('/','-')}.pdf", mime="application/pdf")
-            
-            js_out = json.dumps({"acta": acta_nro, "oficial": name_actuante, "inspeccion": resultado_ia, "camaras_priv": datos_civil if hay_privadas else "N/A"}, indent=4)
-            c_json.download_button("💾 Descargar JSON de Respaldo", data=js_out, file_name=f"Data_B6_{acta_nro.replace('/','-')}.json", mime="application/json")
-            st.success("Validación completada. Los archivos están listos para su resguardo.")
+            pdf_data = generar_pdf_bytes()
+            c_pdf.download_button(label="📄 Descargar ACTA DE INSPECCIÓN OCULAR", data=pdf_data, file_name=f"Acta_Inspeccion_{acta_nro}.pdf", mime="application/pdf")
+            json_data = json.dumps({"acta_nro": acta_nro, "inspeccion": resultado_ia, "privadas": datos_civil if hay_privadas else "N/A"}, indent=4)
+            c_json.download_button(label="💾 Descargar JSON", data=json_data, file_name=f"Data_B6_{acta_nro}.json", mime="application/json")
         except Exception as e:
-            st.error(f"Error en la generación: {e}")
+            st.error(f"Error: {e}")
