@@ -1,160 +1,185 @@
 import streamlit as st
 import json
 from datetime import datetime
+from streamlit_drawable_canvas import st_canvas
+from fpdf import FPDF
+from io import BytesIO
+from PIL import Image
+import numpy as np
 
-# CONFIGURACIÓN DE PÁGINA
-st.set_page_config(page_title="S.I.V. - Bloque 6", layout="wide")
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="S.I.V. Bloque 6 - Inspección y Cámaras", layout="wide")
 
-# ESTILO CSS JUDICIAL
+# --- ESTILOS CSS PARA VISTA PREVIA ---
 st.markdown("""
     <style>
-    .acta-judicial {
+    .acta-previa {
         background-color: white;
         color: black;
-        padding: 45px;
-        border: 2px solid #000;
+        padding: 40px;
+        border: 1px solid #000;
         font-family: 'Arial', sans-serif;
+        line-height: 1.5;
     }
-    .header-oficial { text-align: center; border-bottom: 2px solid black; margin-bottom: 20px; padding-bottom: 10px; }
-    .titulo-principal { 
-        text-align: center; 
-        font-weight: bold; 
-        text-decoration: underline; 
-        font-size: 20px; 
-        margin: 20px 0;
-        text-transform: uppercase;
-    }
-    .seccion-label { font-weight: bold; text-decoration: underline; margin-top: 15px; display: block; }
-    .croquis-box { border: 2px solid black; padding: 15px; background: #fcfcfc; font-family: monospace; text-align: center; margin-top: 10px; }
-    .firmas-grid { margin-top: 60px; display: flex; justify-content: space-between; }
-    .bloque-firma { border-top: 1px solid black; width: 30%; text-align: center; font-size: 11px; padding-top: 5px; }
-    
-    @media print {
-        .no-print, .stButton, footer, header, .stSidebar { display: none !important; }
-        .acta-judicial { border: none !important; padding: 0 !important; }
-    }
+    .titulo-pdf { text-align: center; font-weight: bold; text-decoration: underline; font-size: 18px; margin-bottom: 20px; }
+    .firma-img { border-bottom: 1px solid black; width: 200px; }
     </style>
     """, unsafe_allow_html=True)
 
-# LATERAL
-st.sidebar.title("S.I.V. SISTEMA DE VALIDACIÓN")
+# --- HEADER Y AUTORÍA ---
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Escudo_de_la_Provincia_de_Santa_Fe.svg/1200px-Escudo_de_la_Provincia_de_Santa_Fe.svg.png", width=100)
+st.sidebar.title("S.I.V. Bloque 6")
 st.sidebar.write("**Autoría:** Sub Comisario CASTAÑEDA Juan")
 
-# --- CARGA DE DATOS ---
-st.title("🛡️ Generador de Acta y Croquis")
+# --- BLOQUE 1: DATOS DEL ACTANTE ---
+st.header("👤 Identificación del Oficial Actante")
+with st.container():
+    c1, c2, c3 = st.columns(3)
+    with c1: grade = st.selectbox("Grado:", ["Sub Comisario", "Principal", "Inspector", "Sub Inspector", "Oficial"])
+    with c2: name_actante = st.text_input("Apellido y Nombre:", "CASTAÑEDA Juan")
+    with c3: legajo = st.text_input("Legajo / NI:", "123.456")
 
-with st.expander("📝 DATOS DE CABECERA", expanded=True):
-    c1, c2 = st.columns(2)
-    with c1:
+# --- BLOQUE 2: DATOS DE LA CAUSA ---
+st.header("📝 Datos de la Causa")
+with st.container():
+    col1, col2 = st.columns(2)
+    with col1:
         causa = st.text_input("Causa / Sumario N°:", "775/26")
         lugar = st.text_input("Lugar del Hecho:", "Mendoza y Martín Rodríguez")
-    with c2:
+    with col2:
         hecho = st.text_input("Carátula:", "ROBO CALIFICADO")
-        fecha_acta = datetime.now().strftime('%d/%m/%Y')
+        fecha = st.date_input("Fecha del Procedimiento:")
 
-st.subheader("1. Informe de Inspección")
-resultado_ia = st.text_area("Pegue aquí el texto técnico de la IA:", height=150)
+# --- BLOQUE 3: INSPECCIÓN (IA) ---
+st.header("🔍 Resultado de Inspección Técnica")
+resultado_ia = st.text_area("Pegue aquí el informe descriptivo de la IA:", height=150)
 
-st.subheader("2. Resguardo y Cámaras")
-col_a, col_b = st.columns(2)
-with col_a:
-    perimetro = st.radio("¿Se preservó el perímetro?", ["SÍ", "NO"], horizontal=True)
-with col_b:
-    hay_camaras = st.checkbox("¿Se detectaron cámaras de seguridad?")
+# --- BLOQUE 4: CÁMARAS Y FIRMA DEL CIVIL ---
+st.header("📹 Relevamiento de Cámaras y Compromiso")
+hay_camaras = st.checkbox("¿Se detectaron cámaras de seguridad en el perímetro?")
 
-# Datos de Cámaras (Condicional)
-datos_camara = {}
+datos_civil = {}
+firma_image = None
+
 if hay_camaras:
-    with st.container():
-        st.markdown("---")
-        st.write("**Datos del Responsable de Cámara**")
-        cx1, cx2, cx3 = st.columns(3)
+    with st.expander("Detalles del Responsable y Firma", expanded=True):
+        cx1, cx2 = st.columns(2)
         with cx1:
-            datos_camara['nombre'] = st.text_input("Nombre y Apellido:")
-            datos_camara['dni'] = st.text_input("DNI:")
+            datos_civil['nombre'] = st.text_input("Nombre y Apellido (Civil):")
+            datos_civil['dni'] = st.text_input("DNI:")
+            datos_civil['vinculo'] = st.selectbox("Vínculo con el lugar:", ["Propietario", "Empleado", "Inquilino", "Otro"])
         with cx2:
-            datos_camara['celular'] = st.text_input("Celular:")
-            datos_camara['email'] = st.text_input("E-mail:")
-        with cx3:
-            datos_camara['vinculo'] = st.selectbox("Vínculo:", ["Propietario", "Empleado", "Inquilino", "Otro"])
-            datos_camara['estado'] = st.selectbox("Situación del Registro:", [
+            datos_civil['celular'] = st.text_input("Celular de contacto:")
+            datos_civil['email'] = st.text_input("Correo Electrónico:")
+            estado_camara = st.selectbox("Situación del Registro:", [
                 "ENTREGA VOLUNTARIA: Soporte preservado para PDI.",
-                "NEGATIVA / ORDEN JUDICIAL: Se requiere orden de secuestro.",
-                "MANIFESTACIÓN TÉCNICA: El equipo no graba o está dañado.",
-                "SOLICITUD DE PERITOS: Desconocimiento técnico del propietario.",
+                "NEGATIVA / ORDEN JUDICIAL: Requiere orden de secuestro.",
+                "MANIFESTACIÓN TÉCNICA: No graba o está dañado.",
+                "SOLICITUD DE PERITOS: Desconoce manejo técnico.",
                 "RE-FILMACIÓN DE URGENCIA: Captación digital por riesgo de pérdida."
             ])
+            datos_civil['estado'] = estado_camara
 
-# --- PROCESAMIENTO Y VISTA PREVIA ---
-if st.button("🏁 GENERAR DOCUMENTO FINAL"):
-    if not resultado_ia:
-        st.error("Falta el informe de inspección.")
-    else:
-        st.markdown('<div class="acta-judicial">', unsafe_allow_html=True)
+        st.warning("🖋️ **FIRMA DEL RESPONSABLE:** El civil debe firmar en el recuadro de abajo (Táctil/Mouse)")
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 255, 255, 0)", 
+            stroke_width=3,
+            stroke_color="#000000",
+            background_color="#ffffff",
+            height=150,
+            width=400,
+            key="canvas_firma"
+        )
+        if canvas_result.image_data is not None:
+            firma_image = canvas_result.image_data
+
+# --- FUNCIONES DE EXPORTACIÓN ---
+
+def generar_pdf():
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "POLICÍA DE LA PROVINCIA DE SANTA FE", ln=True, align="C")
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 5, "UNIDAD REGIONAL II - ROSARIO | S.I.V. SISTEMA DE VALIDACIÓN", ln=True, align="C")
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", "BU", 12)
+    pdf.cell(0, 10, "ACTA DE INSPECCIÓN OCULAR", ln=True, align="C")
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, f"CAUSA: {causa} | FECHA: {fecha.strftime('%d/%m/%Y')}", ln=True)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 8, f"LUGAR: {lugar}\nHECHO: {hecho}\nACTANTE: {grade} {name_actante} (Legajo: {legajo})")
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, "1. INFORME TÉCNICO DE INSPECCIÓN:", ln=True)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 6, resultado_ia)
+    pdf.ln(5)
+    
+    if hay_camaras:
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(0, 8, "2. RELEVAMIENTO DE CÁMARAS Y COMPROMISO DE RESGUARDO:", ln=True)
+        pdf.set_font("Arial", "", 10)
+        texto_cam = (f"Se identifica como responsable al Sr./Sra. {datos_civil['nombre']}, DNI {datos_civil['dni']}, "
+                     f"en carácter de {datos_civil['vinculo']}, contacto {datos_civil['celular']} y email {datos_civil['email']}. "
+                     f"Situación del registro: {datos_civil['estado']}. El responsable se compromete al resguardo de las imágenes.")
+        pdf.multi_cell(0, 6, texto_cam)
         
-        # CABECERA OFICIAL
-        st.markdown(f"""
-        <div class="header-oficial">
-            <h2 style="margin:0; font-size:18px;">POLICÍA DE LA PROVINCIA DE SANTA FE</h2>
-            <p style="margin:5px 0; font-size:14px;">UNIDAD REGIONAL II - ROSARIO | <b>S.I.V. SISTEMA DE VALIDACIÓN</b></p>
-        </div>
-        <div class="titulo-principal">ACTA DE INSPECCIÓN OCULAR Y CROQUIS DEMOSTRATIVO</div>
-        
-        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px;">
-            <span>CAUSA: {causa}</span>
-            <span>FECHA: {fecha_acta}</span>
-        </div>
-        <p><b>LUGAR:</b> {lugar}<br><b>HECHO:</b> {hecho}<br><b>ACTANTE:</b> S/C CASTAÑEDA Juan</p>
-        <hr style="border:1px solid black;">
-        """, unsafe_allow_html=True)
+        if firma_image is not None:
+            img = Image.fromarray(firma_image.astype('uint8'), 'RGBA')
+            pdf.image(img, x=10, y=pdf.get_y()+5, w=60)
+            pdf.ln(25)
+            pdf.cell(0, 5, f"Firma Responsable Cámara: {datos_civil['nombre']}", ln=True)
 
-        # TEXTO DE LA INSPECCIÓN
-        st.markdown('<span class="seccion-label">INFORME TÉCNICO DE INSPECCIÓN:</span>', unsafe_allow_html=True)
-        st.markdown(f'<p style="text-align:justify;">{resultado_ia}</p>', unsafe_allow_html=True)
+    pdf.ln(20)
+    pdf.cell(0, 5, "__________________________", ln=True, align="R")
+    pdf.cell(0, 5, f"Firma {grade} {name_actante}", ln=True, align="R")
+    
+    return pdf.output()
 
-        # TEXTO DE RESGUARDO
-        txt_peri = "se procedió a la correcta delimitación y preservación del perímetro" if perimetro == "SÍ" else "no se realizó encintado por razones de urgencia operativa"
-        st.markdown('<span class="seccion-label">DILIGENCIAS DE RESGUARDO:</span>', unsafe_allow_html=True)
-        st.markdown(f'<p>Se hace constar que, previo al inicio de las tareas, {txt_peri}.</p>', unsafe_allow_html=True)
+# --- PROCESO FINAL ---
+st.divider()
+if st.button("🏁 PROCESAR Y VALIDAR BLOQUE 6"):
+    # VISTA PREVIA HTML
+    st.markdown(f"""
+    <div class="acta-previa">
+        <div class="titulo-pdf">ACTA DE INSPECCIÓN OCULAR</div>
+        <p><b>CAUSA N°:</b> {causa} | <b>FECHA:</b> {fecha}</p>
+        <p><b>ACTANTE:</b> {grade} {name_actante} (Leg. {legajo})</p>
+        <hr>
+        <p><b>INFORME:</b><br>{resultado_ia}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-        # TEXTO DE CÁMARAS
-        if hay_camaras:
-            st.markdown('<span class="seccion-label">RELEVAMIENTO DE CÁMARAS:</span>', unsafe_allow_html=True)
-            st.markdown(f"""
-            <p style="text-align:justify;">
-            Se identifica como responsable al Sr./Sra. <b>{datos_camara['nombre']}</b>, DNI <b>{datos_camara['dni']}</b>, 
-            en carácter de {datos_camara['vinculo']}, contacto <b>{datos_camara['celular']}</b> y correo <b>{datos_camara['email']}</b>. 
-            Situación: {datos_camara['estado']}. El responsable se compromete formalmente al resguardo de las imágenes 
-            correspondientes a la franja horaria del hecho.
-            </p>
-            """, unsafe_allow_html=True)
+    # BOTONES DE DESCARGA (OBLIGATORIOS)
+    st.subheader("⬇️ Descargas Oficiales")
+    c_pdf, c_json = st.columns(2)
+    
+    # PDF
+    pdf_bytes = generar_pdf()
+    c_pdf.download_button(
+        label="📄 Descargar Acta PDF",
+        data=pdf_bytes,
+        file_name=f"Acta_B6_{causa}.pdf",
+        mime="application/pdf"
+    )
+    
+    # JSON
+    full_data = {
+        "actante": {"grado": grade, "nombre": name_actante, "legajo": legajo},
+        "causa": {"numero": causa, "hecho": hecho, "lugar": lugar},
+        "inspeccion": resultado_ia,
+        "camaras": datos_civil if hay_camaras else "N/A"
+    }
+    c_json.download_button(
+        label="💾 Exportar JSON (S.I.V. Base)",
+        data=json.dumps(full_data, indent=4),
+        file_name=f"Data_B6_{causa}.json",
+        mime="application/json"
+    )
 
-        # CROQUIS
-        st.markdown('<div class="croquis-box">', unsafe_allow_html=True)
-        st.markdown("<b>CROQUIS DEMOSTRATIVO (NORTE ▲)</b>", unsafe_allow_html=True)
-        st.markdown("""
-        <pre style="background:none; border:none; margin:10px 0; font-weight:bold; line-height:1.2;">
-                  [ CALLE MENDOZA ]
-             ----------+----------
-             (E)       | ① ②     (O)
-             ----------+----------
-                       |
-                       |
-                  [ CALLE MENDOZA ]
-        </pre>
-        <p style="font-size:10px; margin:0;">① Aprehensión | ② Evidencia | ③ Móvil Policial</p>
-        """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # FIRMAS
-        st.markdown('<div class="firmas-grid">', unsafe_allow_html=True)
-        st.markdown(f'<div class="bloque-firma">S/C CASTAÑEDA Juan<br><b>Oficial Actante</b></div>', unsafe_allow_html=True)
-        if hay_camaras:
-            st.markdown(f'<div class="bloque-firma">{datos_camara["nombre"]}<br><b>Responsable Cámara</b></div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="bloque-firma">Testigo 1<br><b>Firma / Aclaración</b></div>', unsafe_allow_html=True)
-        st.markdown('<div class="bloque-firma">Testigo 2 / PDI<br><b>Firma / Aclaración</b></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.success("✅ Documento listo. Use Ctrl+P para guardar como PDF.")
+st.info("💡 Nota: El croquis se realizará en un bloque independiente para garantizar máxima precisión planimétrica.")
