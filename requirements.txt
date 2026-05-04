@@ -1,5 +1,1 @@
 streamlit
-streamlit-drawable-canvas
-fpdf2
-Pillow
-numpy
