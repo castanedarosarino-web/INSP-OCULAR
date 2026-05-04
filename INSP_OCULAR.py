@@ -1,43 +1,71 @@
 import streamlit as st
+import json
+from fpdf import FPDF
 
+# --- FUNCIÓN PARA GENERAR EL PDF ---
+def crear_pdf_final(imagen_croquis):
+    """Genera el PDF con el encabezado solicitado y el croquis."""
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Título institucional solicitado
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 15, "CROQUIS DEL LUGAR DEL HECHO", ln=True, align='C')
+    
+    # Inserción de la imagen del croquis
+    if imagen_croquis:
+        # Se ajusta al ancho de la página (190mm)
+        pdf.image(imagen_croquis, x=10, y=30, w=190)
+    
+    # Retorno binario directo para evitar errores en Python 3.14 (Render)
+    return pdf.output()
 
-def modulo_croquis_inteligente():
-    st.header("📐 TRANSFORMACIÓN DE INSPECCIÓN A PLANO")
+# --- INTERFAZ PRINCIPAL ---
+st.title("Módulo de Recepción e Impresión - SVI")
 
-    st.subheader("1. Redacción de la Inspección Ocular")
+# 1. CARGA DEL ARCHIVO JSON (Generado por la IA con la inteligencia del hecho)
+archivo_json = st.file_uploader("Cargar JSON del hecho", type=['json'])
 
-    relato = st.text_area(
-        "Describa lo observado (este texto será el marco legal del croquis):",
-        placeholder="Ej: Se observa en el lugar una abertura violentada, elementos removidos y desorden generalizado...",
-        height=150
-    )
+if archivo_json:
+    try:
+        # Cargar datos del JSON para el flujo del programa
+        datos_hecho = json.load(archivo_json)
+        st.success("✅ Datos del hecho cargados correctamente.")
+        
+        # Muestra una breve referencia del archivo para el actante
+        st.info(f"Referencia: {archivo_json.name}")
 
-    st.subheader("2. Sustento Visual")
+        # 2. CARGA DEL CROQUIS (La imagen generada por la IA)
+        archivo_imagen = st.file_uploader("Cargar imagen del croquis (AI)", type=['png', 'jpg', 'jpeg'])
 
-    img_evidencia = st.file_uploader(
-        "Suba la foto del croquis o relevamiento:",
-        type=['jpg', 'png', 'jpeg']
-    )
+        if archivo_imagen:
+            # Vista previa del croquis para verificación del actante
+            st.image(archivo_imagen, caption="Vista previa para el acta")
 
-    if img_evidencia and relato:
-        st.success("✅ Sistema listo para fusionar relato y visión.")
+            st.markdown("---")
+            # Disposición de botones independientes
+            col1, col2 = st.columns(2)
 
-        with st.container(border=True):
-            st.markdown("### VISTA PREVIA DEL ACTA INTEGRADA")
-            st.write(f"**RELATO:** {relato}")
-            st.image(
-                img_evidencia,
-                caption="CROQUIS / RELEVAMIENTO FOTOGRÁFICO ADJUNTO",
-                use_container_width=True
-            )
+            # BOTÓN A: VIAJAR AL ACTANTE (Integración interna del sistema)
+            with col1:
+                if st.button("🚀 Viajar al Actante"):
+                    # Almacena los datos en el estado de sesión para el resto del sumario
+                    st.session_state['actante_data'] = datos_hecho
+                    st.toast("Información enviada al bloque del Actante")
 
-        if st.button("INTEGRAR AL SUMARIO FINAL"):
-            st.session_state['acta_inspeccion_lista'] = True
-            st.session_state['relato_inspeccion'] = relato
-            st.success("✅ Inspección integrada al sumario final")
-            st.balloons()
+            # BOTÓN B: DESCARGA PDF (Para impresión física del anexo)
+            with col2:
+                # Generación de bytes del PDF
+                pdf_bytes = crear_pdf_final(archivo_imagen)
+                st.download_button(
+                    label="📥 Descargar PDF para Impresión",
+                    data=pdf_bytes,
+                    file_name="CROQUIS_LUGAR_DEL_HECHO.pdf",
+                    mime="application/pdf"
+                )
 
+    except Exception as e:
+        st.error(f"Error al procesar los archivos: {e}")
 
-st.title("S.I.V. - Módulo Croquis Inteligente")
-
-modulo_croquis_inteligente()
+else:
+    st.info("A la espera del archivo JSON del hecho para iniciar el bloque.")
