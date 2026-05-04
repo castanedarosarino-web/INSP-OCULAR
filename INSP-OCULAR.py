@@ -2,129 +2,136 @@ import streamlit as st
 import json
 from datetime import datetime
 
-# CONFIGURACIÓN Y ESTILO PROFESIONAL
-st.set_page_config(page_title="SIV - Inspección Ocular Integrada", layout="wide")
+# CONFIGURACIÓN DE PÁGINA
+st.set_page_config(page_title="S.I.V. - Bloque 6", layout="wide")
 
+# ESTILO CSS JUDICIAL
 st.markdown("""
     <style>
-    .main { background-color: #f5f5f5; }
-    .stTextArea textarea { font-size: 14px !important; }
-    .croquis-final { 
-        border: 3px solid #000; 
-        padding: 30px; 
-        background-color: white; 
-        font-family: 'Arial', sans-serif;
+    .acta-judicial {
+        background-color: white;
         color: black;
+        padding: 45px;
+        border: 2px solid #000;
+        font-family: 'Arial', sans-serif;
     }
-    .header-table { width: 100%; border-bottom: 2px solid black; margin-bottom: 10px; }
+    .header-oficial { text-align: center; border-bottom: 2px solid black; margin-bottom: 20px; padding-bottom: 10px; }
+    .titulo-principal { 
+        text-align: center; 
+        font-weight: bold; 
+        text-decoration: underline; 
+        font-size: 20px; 
+        margin: 20px 0;
+        text-transform: uppercase;
+    }
+    .seccion-label { font-weight: bold; text-decoration: underline; margin-top: 15px; display: block; }
+    .croquis-box { border: 2px solid black; padding: 15px; background: #fcfcfc; font-family: monospace; text-align: center; margin-top: 10px; }
+    .firmas-grid { margin-top: 60px; display: flex; justify-content: space-between; }
+    .bloque-firma { border-top: 1px solid black; width: 30%; text-align: center; font-size: 11px; padding-top: 5px; }
+    
+    @media print {
+        .no-print, .stButton, footer, header, .stSidebar { display: none !important; }
+        .acta-judicial { border: none !important; padding: 0 !important; }
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# AUTORÍA
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/b/b5/Escudo_de_la_Polic%C3%ADa_de_Santa_Fe.png", width=100)
-st.sidebar.markdown(f"### Autoría:\n**Sub Comisario CASTAÑEDA Juan**")
+# LATERAL
+st.sidebar.title("S.I.V. SISTEMA DE VALIDACIÓN")
+st.sidebar.write("**Autoría:** Sub Comisario CASTAÑEDA Juan")
 
-# SIMULACIÓN DE INTEGRACIÓN DE BLOQUES (Aquí el SIV toma datos de B2 y B5)
-# En un futuro, estos datos vendrán del st.session_state global
-st.sidebar.header("📥 Datos Integrados")
-nombre_detenido = st.sidebar.text_input("Dato de Bloque 2 (Aprehendido):", value="GOMEZ, Ramón")
-objeto_secuestro = st.sidebar.text_input("Dato de Bloque 5 (Secuestro):", value="Revólver Cal. 38")
+# --- CARGA DE DATOS ---
+st.title("🛡️ Generador de Acta y Croquis")
 
-st.title("🛡️ S.I.V. - Módulo de Inspección y Planimetría")
+with st.expander("📝 DATOS DE CABECERA", expanded=True):
+    c1, c2 = st.columns(2)
+    with c1:
+        causa = st.text_input("Causa / Sumario N°:", "775/26")
+        lugar = st.text_input("Lugar del Hecho:", "Mendoza y Martín Rodríguez")
+    with c2:
+        hecho = st.text_input("Carátula:", "ROBO CALIFICADO")
+        fecha_acta = datetime.now().strftime('%d/%m/%Y')
 
-# 1. ENTRADA DE DATOS TÉCNICOS
-with st.container():
-    col_a, col_b = st.columns([1, 1])
-    with col_a:
-        st.subheader("📍 Ubicación y Escenario")
-        lugar = st.text_input("Lugar exacto del hecho:", value="Mendoza y Martín Rodríguez")
-        clima = st.selectbox("Estado Climático:", ["Despejado", "Lluvia", "Niebla", "Nublado"])
-        luz = st.selectbox("Iluminación Artificial:", ["Excelente", "Regular", "Nula", "Luz Solar"])
-    
-    with col_b:
-        st.subheader("🧭 Descripciones por Cardinal (IA)")
-        norte = st.text_input("NORTE:", placeholder="Descripción de la calzada...")
-        sur = st.text_input("SUR:", placeholder="Descripción de la intersección...")
-        este = st.text_input("ESTE:", placeholder="Descripción de la acera...")
-        oeste = st.text_input("OESTE:", placeholder="Descripción de los locales...")
+st.subheader("1. Informe de Inspección")
+resultado_ia = st.text_area("Pegue aquí el texto técnico de la IA:", height=150)
 
-# 2. CONFIGURACIÓN DEL CROQUIS (REFERENCIAS DINÁMICAS)
-st.divider()
-st.subheader("🔢 Configuración de Referencias")
-c1, c2, c3 = st.columns(3)
-ref_1 = c1.text_input("Ref ①:", value=f"Aprehendido ({nombre_detenido})")
-ref_2 = c2.text_input("Ref ②:", value=f"Secuestro ({objeto_secuestro})")
-ref_3 = c3.text_input("Ref ③:", value="Unidad Móvil Policial")
+st.subheader("2. Resguardo y Cámaras")
+col_a, col_b = st.columns(2)
+with col_a:
+    perimetro = st.radio("¿Se preservó el perímetro?", ["SÍ", "NO"], horizontal=True)
+with col_b:
+    hay_camaras = st.checkbox("¿Se detectaron cámaras de seguridad?")
 
-# 3. EJECUCIÓN: INSPECCIÓN OCULAR + CROQUIS
-if st.button("🏁 GENERAR INSPECCIÓN OCULAR Y CROQUIS DEMOSTRATIVO"):
-    
-    # --- PARTE A: REDACCIÓN PARA EL ACTANTE ---
-    st.success("✅ Informe generado para el Actante")
-    texto_acta = f"""INSPECCIÓN OCULAR: En la fecha y hora señalada, se constituye personal policial en {lugar}. 
-    Se observa un escenario con visibilidad {luz} y condiciones climáticas {clima}. 
-    Se procede al registro fotográfico constatando: Al NORTE {norte}; al SUR {sur}; al ESTE {este} y al OESTE {oeste}. 
-    Se hace constar que la Referencia ① corresponde a la ubicación de {ref_1} y la Referencia ② al hallazgo de {ref_2}."""
-    st.code(texto_acta, language="")
+# Datos de Cámaras (Condicional)
+datos_camara = {}
+if hay_camaras:
+    with st.container():
+        st.markdown("---")
+        st.write("**Datos del Responsable de Cámara**")
+        cx1, cx2, cx3 = st.columns(3)
+        with cx1:
+            datos_camara['nombre'] = st.text_input("Nombre y Apellido:")
+            datos_camara['dni'] = st.text_input("DNI:")
+        with cx2:
+            datos_camara['celular'] = st.text_input("Celular:")
+            datos_camara['email'] = st.text_input("E-mail:")
+        with cx3:
+            datos_camara['vinculo'] = st.selectbox("Vínculo:", ["Propietario", "Empleado", "Inquilino", "Otro"])
+            datos_camara['estado'] = st.selectbox("Situación del Registro:", [
+                "ENTREGA VOLUNTARIA: Soporte preservado para PDI.",
+                "NEGATIVA / ORDEN JUDICIAL: Se requiere orden de secuestro.",
+                "MANIFESTACIÓN TÉCNICA: El equipo no graba o está dañado.",
+                "SOLICITUD DE PERITOS: Desconocimiento técnico del propietario.",
+                "RE-FILMACIÓN DE URGENCIA: Captación digital por riesgo de pérdida."
+            ])
 
-    # --- PARTE B: CROQUIS DEMOSTRATIVO (EL RESULTADO VISUAL) ---
-    st.markdown('<div class="croquis-final">', unsafe_allow_html=True)
-    
-    # Encabezado Formulario
-    st.markdown(f"""
-    <table class="header-table">
-        <tr>
-            <td style="text-align:left;"><b>POLICÍA DE SANTA FE</b><br>U.R. II - ROSARIO</td>
-            <td style="text-align:center;"><b>CROQUIS DEMOSTRATIVO</b><br>INSPECCIÓN OCULAR</td>
-            <td style="text-align:right;"><b>FECHA:</b> {datetime.now().strftime('%d/%m/%Y')}</td>
-        </tr>
-    </table>
-    <p><b>LUGAR:</b> {lugar} | <b>VISIBILIDAD:</b> {luz}</p>
-    """, unsafe_allow_html=True)
-
-    # Cuerpo del Croquis
-    col_ref, col_dibujo = st.columns([1, 2])
-    with col_ref:
+# --- PROCESAMIENTO Y VISTA PREVIA ---
+if st.button("🏁 GENERAR DOCUMENTO FINAL"):
+    if not resultado_ia:
+        st.error("Falta el informe de inspección.")
+    else:
+        st.markdown('<div class="acta-judicial">', unsafe_allow_html=True)
+        
+        # CABECERA OFICIAL
         st.markdown(f"""
-        **REFERENCIAS:**<br>
-        ① {ref_1}<br>
-        ② {ref_2}<br>
-        ③ {ref_3}<br><br>
-        **OBSERVACIONES:**<br>
-        Se orienta el presente hacia el<br>
-        Cardinal Norte. No se realiza<br>
-        a escala técnica, solo demostrativa.
-        """, unsafe_allow_html=True)
-
-    with col_dibujo:
-        # Representación gráfica mejorada
-        st.markdown(f"""
-        <div style="border: 2px solid #333; padding: 20px; text-align: center; background: #fafafa;">
-            <b>NORTE (▲)</b><br>
-            <div style="font-family: monospace; line-height: 1.2;">
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ CALLE MENDOZA ]<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br>
-            -----(L.C.)-----+-----(L.C.)-----<br>
-            M. RODRÍGUEZ (E)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; (O) M. RODRÍGUEZ<br>
-            -----(L.C.)-----+-----(L.C.)-----<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;<b>① ②</b><br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>③</b>&nbsp;&nbsp;&nbsp;|<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ CALLE MENDOZA ]<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br>
-            </div>
-            <b>SUR</b>
+        <div class="header-oficial">
+            <h2 style="margin:0; font-size:18px;">POLICÍA DE LA PROVINCIA DE SANTA FE</h2>
+            <p style="margin:5px 0; font-size:14px;">UNIDAD REGIONAL II - ROSARIO | <b>S.I.V. SISTEMA DE VALIDACIÓN</b></p>
         </div>
+        <div class="titulo-principal">ACTA DE INSPECCIÓN OCULAR Y CROQUIS DEMOSTRATIVO</div>
+        
+        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:15px;">
+            <span>CAUSA: {causa}</span>
+            <span>FECHA: {fecha_acta}</span>
+        </div>
+        <p><b>LUGAR:</b> {lugar}<br><b>HECHO:</b> {hecho}<br><b>ACTANTE:</b> S/C CASTAÑEDA Juan</p>
+        <hr style="border:1px solid black;">
         """, unsafe_allow_html=True)
 
-    # Pie de firmas
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    f1, f2, f3 = st.columns(3)
-    f1.markdown("<hr>Firma Oficial Actante", unsafe_allow_html=True)
-    f2.markdown("<hr>Firma Testigo 1", unsafe_allow_html=True)
-    f3.markdown("<hr>Firma Testigo 2", unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        # TEXTO DE LA INSPECCIÓN
+        st.markdown('<span class="seccion-label">INFORME TÉCNICO DE INSPECCIÓN:</span>', unsafe_allow_html=True)
+        st.markdown(f'<p style="text-align:justify;">{resultado_ia}</p>', unsafe_allow_html=True)
 
-# BOTÓN DE DESCARGA DE DATOS PARA EL SUMARIO
-st.sidebar.download_button("💾 Exportar para SUMARIO SVI", json.dumps({"informe": "texto_acta", "lugar": lugar}))
+        # TEXTO DE RESGUARDO
+        txt_peri = "se procedió a la correcta delimitación y preservación del perímetro" if perimetro == "SÍ" else "no se realizó encintado por razones de urgencia operativa"
+        st.markdown('<span class="seccion-label">DILIGENCIAS DE RESGUARDO:</span>', unsafe_allow_html=True)
+        st.markdown(f'<p>Se hace constar que, previo al inicio de las tareas, {txt_peri}.</p>', unsafe_allow_html=True)
+
+        # TEXTO DE CÁMARAS
+        if hay_camaras:
+            st.markdown('<span class="seccion-label">RELEVAMIENTO DE CÁMARAS:</span>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <p style="text-align:justify;">
+            Se identifica como responsable al Sr./Sra. <b>{datos_camara['nombre']}</b>, DNI <b>{datos_camara['dni']}</b>, 
+            en carácter de {datos_camara['vinculo']}, contacto <b>{datos_camara['celular']}</b> y correo <b>{datos_camara['email']}</b>. 
+            Situación: {datos_camara['estado']}. El responsable se compromete formalmente al resguardo de las imágenes 
+            correspondientes a la franja horaria del hecho.
+            </p>
+            """, unsafe_allow_html=True)
+
+        # CROQUIS
+        st.markdown('<div class="croquis-box">', unsafe_allow_html=True)
+        st.markdown("<b>CROQUIS DEMOSTRATIVO (NORTE ▲)</b>", unsafe_allow_html=True)
+        st.markdown("""
+        <pre style="background:none; border:none; margin:10px 0; font-weight:bold; line-height:1.2;">
+                  [ CALLE MENDOZA ]
