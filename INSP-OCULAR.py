@@ -135,3 +135,26 @@ if st.button("🏁 GENERAR DOCUMENTO FINAL"):
         st.markdown("""
         <pre style="background:none; border:none; margin:10px 0; font-weight:bold; line-height:1.2;">
                   [ CALLE MENDOZA ]
+             ----------+----------
+             (E)       | ① ②     (O)
+             ----------+----------
+                       |
+                       |
+                  [ CALLE MENDOZA ]
+        </pre>
+        <p style="font-size:10px; margin:0;">① Aprehensión | ② Evidencia | ③ Móvil Policial</p>
+        """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # FIRMAS
+        st.markdown('<div class="firmas-grid">', unsafe_allow_html=True)
+        st.markdown(f'<div class="bloque-firma">S/C CASTAÑEDA Juan<br><b>Oficial Actante</b></div>', unsafe_allow_html=True)
+        if hay_camaras:
+            st.markdown(f'<div class="bloque-firma">{datos_camara["nombre"]}<br><b>Responsable Cámara</b></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="bloque-firma">Testigo 1<br><b>Firma / Aclaración</b></div>', unsafe_allow_html=True)
+        st.markdown('<div class="bloque-firma">Testigo 2 / PDI<br><b>Firma / Aclaración</b></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.success("✅ Documento listo. Use Ctrl+P para guardar como PDF.")
